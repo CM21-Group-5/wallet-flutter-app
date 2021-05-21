@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:cm_pratical_assignment_2/src/views/ui/pie_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +25,7 @@ class _HomeState extends State<Home> {
 
   String base;
   List<String> symbols;
+  Map<String, double> money;
 
   //API_KEY = 278379fff23019b5e4ceb3d7c73ca717
   @override
@@ -33,6 +36,7 @@ class _HomeState extends State<Home> {
     myCurrencies = [];
 
     symbols = [];
+    money=new HashMap();
 
     myCurrencies = numberFormatSymbols.keys
         .where((key) => key.toString().contains('_'))
@@ -53,17 +57,19 @@ class _HomeState extends State<Home> {
     myCurrencies = auxList;
   }
 
-  void _incrementCurrencyValue(int currencyIndex) {
+  void _incrementCurrencyValue(int currencyIndex, currencyCode) {
     if (_currencyAmounts[currencyIndex] >= 1000) return;
     setState(() {
       _currencyAmounts[currencyIndex]++;
+      money.update(currencyCode, (value) => _currencyAmounts[currencyIndex].toDouble());
     });
   }
 
-  void _decrementCurrencyValue(int currencyIndex) {
+  void _decrementCurrencyValue(int currencyIndex, currencyCode) {
     if (_currencyAmounts[currencyIndex] <= 0) return;
     setState(() {
       _currencyAmounts[currencyIndex]--;
+      money.update(currencyCode, (value) => _currencyAmounts[currencyIndex].toDouble());
     });
   }
 
@@ -127,7 +133,7 @@ class _HomeState extends State<Home> {
                                     Icons.add,
                                     color: Colors.white,
                                   )),
-                              onTap: () => {_incrementCurrencyValue(index)},
+                              onTap: () => {_incrementCurrencyValue(index, currencyCode)},
                             ),
                           ),
                         ),
@@ -144,7 +150,7 @@ class _HomeState extends State<Home> {
                                     Icons.remove,
                                     color: Colors.white,
                                   )),
-                              onTap: () => {_decrementCurrencyValue(index)},
+                              onTap: () => {_decrementCurrencyValue(index, currencyCode)},
                             ),
                           ),
                         ),
@@ -155,12 +161,10 @@ class _HomeState extends State<Home> {
                     onTap: () {
                      // ***********************************************************************************
                       base=currencyCode;
-                      print("base "+base);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          //FALTA AS QUANTIDADES DE CADA MOEDA
-                            builder: (context) => PieChartWidget(base, symbols)),
+                            builder: (context) => PieChartWidget(base, symbols, money)),
                       );
                     },
                   );
@@ -188,8 +192,8 @@ class _HomeState extends State<Home> {
   }
 
   void _addCurrency() {
-    print(_currencyAmounts);
-    print(supportedLocales);
+    //print(_currencyAmounts);
+    //print(supportedLocales);
     //print(NumberFormat.simpleCurrency(locale: item.toString()).currencySymbol);
     showDialog(
       context: context,
@@ -299,7 +303,9 @@ class _HomeState extends State<Home> {
       supportedLocales.add(locale);
       myCurrencies.remove(locale);
       symbols.add(currencyCode);
-      print(symbols);
+      money[currencyCode]= 0;
+      //money.putIfAbsent(currencyCode, () => 0);
+      //print(symbols);
     });
     /*print(context);
     print(locale);*/
@@ -311,7 +317,8 @@ class _HomeState extends State<Home> {
       supportedLocales.remove(locale);
       myCurrencies.add(locale);
       symbols.add(currencyCode);
-      print(symbols);
+      money.remove(currencyCode);
+      //print(symbols);
     });
   }
 }

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer';
 import 'dart:core';
+import 'dart:convert';
+import '../../model/Rates.dart';
 
 import 'app_bar.dart';
 
@@ -12,25 +14,32 @@ class PieChartWidget extends StatefulWidget {
 
   final String base;
   final List<String> symbols;
+  final Map<String, double> money;
 
-  PieChartWidget(this.base, this.symbols);
+  PieChartWidget(this.base, this.symbols, this.money);
 
   @override
   _PieChartState createState() =>
-    _PieChartState(base,  symbols);
+    _PieChartState(base,  symbols, money);
 
 }
 
 
 
 Future<String> getResponse(base, symbols) async {
-  print(base);
-  String symbolsString=symbols[0];
+  //print(base);
+  String symbolsString;
+  //Because of the list space
+  if(symbols[0]!=base)
+    symbolsString=symbols[0];
+  else
+    symbolsString=symbols[1];
+
   for(int i=1; i<symbols.length; i++){
-    if(symbols[i]!=base)
-      symbolsString ='$symbolsString'+','+symbols[i];
+    if(symbols[i]!=base){
+      symbolsString ='$symbolsString'+','+symbols[i];}
   }
-  print(symbolsString);
+  //print(symbolsString);
   final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
       { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
         'base': base,
@@ -47,21 +56,34 @@ class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
   Future<String> message = Future<String>.value('');
+  //String totalMessage=0;
 
   String base;
   List<String> symbols;
+  Map<String, double> money;
 
-  _PieChartState(String base,  List<String> symbols);
+  double total=0;
+  Map<String, double> moneyInBaseCurrency;
+
+  Map rates;
+
+  _PieChartState(String base,  List<String> symbols, Map<String, double> money);
+
 
   @override
   void initState() {
     //print(widget.base);
     base=widget.base;
     symbols=widget.symbols;
+    money=widget.money;
+    moneyInBaseCurrency=widget.money;
+
     setState(() {
       message = getResponse(base, symbols);
+      /*total = getValuesInBaseCurrency();*/
     });
   }
+
 
 
   //Criar uma caixa de texto com o valor total na moeda selecionada
@@ -98,23 +120,21 @@ class _PieChartState extends State<PieChartWidget> {
                     sections: showingSections()),
               ),
             ),
-            /*ElevatedButton(
-                child: Text('Do Request'),
-                onPressed: () {
-                  setState(() {
-                    mostrar(this.myCurrencies, this._currencyAmounts);
-                  });
-                }
-            ),*/
+
             FutureBuilder<String> (
               future: message,
               builder: (context, snapshot) {
-                if (snapshot.hasData)
+                if (snapshot.hasData){
+                  getRates(snapshot.data);
                   return Text(snapshot.data);
+                }
                 else if (snapshot.hasError)
                   return Text('${snapshot.error}');
                 return CircularProgressIndicator();
-              })
+              }),
+            TextButton(
+                onPressed: () {return Text(getValuesInBaseCurrency().toString());},
+                child: Text('Press Me!'))
           ],
         ),
       ),
@@ -128,10 +148,14 @@ class _PieChartState extends State<PieChartWidget> {
   //Cria um chart com 4 partes e cada parte tem um valor default.
   //Isto tem de vir da lista da outra pagina
   List<PieChartSectionData> showingSections() {
-    return List.generate(4, (i) {
+    /*List<double> values=moneyInBaseCurrency.values.toList();
+    List<String> name=moneyInBaseCurrency.keys.toList();*/
+    return List.generate(moneyInBaseCurrency.length, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 25.0 : 16.0;
       final radius = isTouched ? 60.0 : 50.0;
+
+
       switch (i) {
         case 0:
           return PieChartSectionData(
@@ -181,5 +205,39 @@ class _PieChartState extends State<PieChartWidget> {
           throw Error();
       }
     });
+  }
+
+  void getRates(String data) {
+    Map<String, dynamic> ratesMap = jsonDecode(data);
+
+    var rat = Rate.fromJson(ratesMap);
+
+    //print(' ${rat.rates}');
+    rates=rat.rates;
+
+    //getValuesInBaseCurrency();
+  }
+
+  double getValuesInBaseCurrency() {
+    print(rates);
+    print("Money ");
+    print(money);
+
+
+    money.entries.forEach((quantity) {
+      rates.entries.forEach((rate) {
+        if(rate.key==quantity.key){
+          moneyInBaseCurrency.update(rate.key, (value) => quantity.value/rate.value);
+        }
+      });
+    });
+    print(moneyInBaseCurrency);
+
+    moneyInBaseCurrency.values.forEach((value) {
+      total=total+value;
+    });
+    print(total);
+
+    return total;
   }
 }
