@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer';
 import 'dart:core';
+import 'dart:convert';
+import '../../model/Rates.dart';
 
 import 'app_bar.dart';
 
@@ -51,7 +53,10 @@ class _PieChartState extends State<PieChartWidget> {
   String base;
   List<String> symbols;
 
+  Map rates;
+
   _PieChartState(String base,  List<String> symbols);
+
 
   @override
   void initState() {
@@ -109,8 +114,10 @@ class _PieChartState extends State<PieChartWidget> {
             FutureBuilder<String> (
               future: message,
               builder: (context, snapshot) {
-                if (snapshot.hasData)
+                if (snapshot.hasData){
+                  getRates(snapshot.data);
                   return Text(snapshot.data);
+                }
                 else if (snapshot.hasError)
                   return Text('${snapshot.error}');
                 return CircularProgressIndicator();
@@ -181,5 +188,34 @@ class _PieChartState extends State<PieChartWidget> {
           throw Error();
       }
     });
+  }
+
+  void getRates(String data) {
+    //print(Text(data));
+
+    /*final body = json.decode(data);
+    Map<String, dynamic> rates = jsonDecode(data);*/
+    Map<String, dynamic> ratesMap = jsonDecode(data);
+    
+    var rat = Rate.fromJson(ratesMap);
+
+    print(' ${rat.rates}');
+    rates=rat.rates;
+
+    getValuesInBaseCurrency();
+  }
+
+  void getValuesInBaseCurrency() {
+    print("Final");
+    print(rates);
+    /*for(int i=0; i<rat.lenght; i++){
+      print(rat[i]);
+    }*/
+    /*rates.keys.forEach((key) {
+      print(key);
+    });
+    rates.values.forEach((value) {
+      print(value);
+    });*/
   }
 }

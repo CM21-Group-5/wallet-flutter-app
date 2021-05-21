@@ -189,7 +189,7 @@ class _HomeState extends State<Home> {
 
   void _addCurrency() {
     print(_currencyAmounts);
-    print(supportedLocales);
+    //print(supportedLocales);
     //print(NumberFormat.simpleCurrency(locale: item.toString()).currencySymbol);
     showDialog(
       context: context,
