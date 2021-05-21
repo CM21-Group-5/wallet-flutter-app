@@ -56,12 +56,13 @@ class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
   Future<String> message = Future<String>.value('');
+  //String totalMessage=0;
 
   String base;
   List<String> symbols;
   Map<String, double> money;
 
-
+  double total=0;
   Map<String, double> moneyInBaseCurrency;
 
   Map rates;
@@ -79,6 +80,7 @@ class _PieChartState extends State<PieChartWidget> {
 
     setState(() {
       message = getResponse(base, symbols);
+      /*total = getValuesInBaseCurrency();*/
     });
   }
 
@@ -118,14 +120,7 @@ class _PieChartState extends State<PieChartWidget> {
                     sections: showingSections()),
               ),
             ),
-            /*ElevatedButton(
-                child: Text('Do Request'),
-                onPressed: () {
-                  setState(() {
-                    mostrar(this.myCurrencies, this._currencyAmounts);
-                  });
-                }
-            ),*/
+
             FutureBuilder<String> (
               future: message,
               builder: (context, snapshot) {
@@ -138,7 +133,7 @@ class _PieChartState extends State<PieChartWidget> {
                 return CircularProgressIndicator();
               }),
             TextButton(
-                onPressed: () {return getValuesInBaseCurrency(); },
+                onPressed: () {return Text(getValuesInBaseCurrency().toString());},
                 child: Text('Press Me!'))
           ],
         ),
@@ -153,10 +148,14 @@ class _PieChartState extends State<PieChartWidget> {
   //Cria um chart com 4 partes e cada parte tem um valor default.
   //Isto tem de vir da lista da outra pagina
   List<PieChartSectionData> showingSections() {
-    return List.generate(money.length, (i) {
+    /*List<double> values=moneyInBaseCurrency.values.toList();
+    List<String> name=moneyInBaseCurrency.keys.toList();*/
+    return List.generate(moneyInBaseCurrency.length, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 25.0 : 16.0;
       final radius = isTouched ? 60.0 : 50.0;
+
+
       switch (i) {
         case 0:
           return PieChartSectionData(
@@ -209,12 +208,8 @@ class _PieChartState extends State<PieChartWidget> {
   }
 
   void getRates(String data) {
-    //print(Text(data));
-
-    /*final body = json.decode(data);
-    Map<String, dynamic> rates = jsonDecode(data);*/
     Map<String, dynamic> ratesMap = jsonDecode(data);
-    
+
     var rat = Rate.fromJson(ratesMap);
 
     //print(' ${rat.rates}');
@@ -224,19 +219,12 @@ class _PieChartState extends State<PieChartWidget> {
   }
 
   double getValuesInBaseCurrency() {
-    //print("Final");
     print(rates);
     print("Money ");
     print(money);
 
-    double total=0;
-
-    /*{DZD: 162.00712}
-    Money
-    {DZD: 2, EUR: 0}*/
 
     money.entries.forEach((quantity) {
-      //print(quantity);
       rates.entries.forEach((rate) {
         if(rate.key==quantity.key){
           moneyInBaseCurrency.update(rate.key, (value) => quantity.value/rate.value);
@@ -251,16 +239,5 @@ class _PieChartState extends State<PieChartWidget> {
     print(total);
 
     return total;
-
-
-
-
-    //multiplicar a quantidade X pelo rate
-    /*rates.keys.forEach((key) {
-      print(key);
-    });
-    rates.values.forEach((value) {
-      print(value);
-    });*/
   }
 }
