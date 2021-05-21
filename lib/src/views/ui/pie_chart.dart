@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:developer';
 import 'dart:core';
 import 'dart:convert';
+import 'package:async/async.dart';
 import '../../model/Rates.dart';
 
 import 'app_bar.dart';
@@ -15,19 +16,17 @@ class PieChartWidget extends StatefulWidget {
   final String base;
   final List<String> symbols;
   final Map<String, double> money;
+  //final AsyncMemoizer _memoizer= AsyncMemoizer();
 
   PieChartWidget(this.base, this.symbols, this.money);
 
   @override
   _PieChartState createState() =>
     _PieChartState(base,  symbols, money);
-
 }
 
-
-
 Future<String> getResponse(base, symbols) async {
-  //print(base);
+  //await Future.delayed(Duration(seconds: 2));
   String symbolsString;
   //Because of the list space
   if(symbols[0]!=base)
@@ -55,6 +54,7 @@ Future<String> getResponse(base, symbols) async {
 class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
+
   Future<String> message = Future<String>.value('');
   //String totalMessage=0;
 
@@ -64,6 +64,8 @@ class _PieChartState extends State<PieChartWidget> {
 
   double total=0;
   Map<String, double> moneyInBaseCurrency;
+  bool isEnabled=true;
+  //AsyncMemoizer _memoizer;
 
   Map rates;
 
@@ -72,16 +74,21 @@ class _PieChartState extends State<PieChartWidget> {
 
   @override
   void initState() {
+    super.initState();
     //print(widget.base);
     base=widget.base;
     symbols=widget.symbols;
     money=widget.money;
     moneyInBaseCurrency=widget.money;
 
-    setState(() {
-      message = getResponse(base, symbols);
-      /*total = getValuesInBaseCurrency();*/
-    });
+    //_memoizer = AsyncMemoizer();
+    message = getResponse(base, symbols);
+    //_memoizer = AsyncMemoizer();
+
+    /*setState(() {
+
+      *//*total = getValuesInBaseCurrency();*//*
+    });*/
   }
 
 
@@ -94,6 +101,23 @@ class _PieChartState extends State<PieChartWidget> {
         child: Column(
           children: [
             new GradientAppBar("wallet"),
+            TextButton(
+              onPressed: () {
+                /*setState((){
+                  ();
+                });*/
+                getValuesInBaseCurrency();
+                disableButton();
+              },
+              child: Text('Calculate Total!')),
+            new Text("$total in Total",//"Total: $total",
+                    style: const TextStyle(
+                        color: Colors.black,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17.0),
+            ),
+
             Expanded(
               child: PieChart(
                 PieChartData(
@@ -124,17 +148,19 @@ class _PieChartState extends State<PieChartWidget> {
             FutureBuilder<String> (
               future: message,
               builder: (context, snapshot) {
-                if (snapshot.hasData){
-                  getRates(snapshot.data);
-                  return Text(snapshot.data);
-                }
+                //if(snapshot.connectionState == ConnectionState.done){
+                  if (snapshot.hasData){
+                      getRates(snapshot.data);
+                      return Text(snapshot.data);
+                  }
                 else if (snapshot.hasError)
                   return Text('${snapshot.error}');
                 return CircularProgressIndicator();
+                /*}
+                return CircularProgressIndicator();*/
+
               }),
-            TextButton(
-                onPressed: () {return Text(getValuesInBaseCurrency().toString());},
-                child: Text('Press Me!'))
+
           ],
         ),
       ),
@@ -238,6 +264,20 @@ class _PieChartState extends State<PieChartWidget> {
     });
     print(total);
 
+
     return total;
+  }
+
+  enableButton(){
+    setState(() {
+      isEnabled = true;
+    });
+  }
+
+  disableButton(){
+
+    setState(() {
+      isEnabled = true;
+    });
   }
 }
