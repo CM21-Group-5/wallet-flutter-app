@@ -106,8 +106,9 @@ class _PieChartState extends State<PieChartWidget> {
                 /*setState((){
                   ();
                 });*/
-                getValuesInBaseCurrency();
-                disableButton();
+                /*getValuesInBaseCurrency();
+                disableButton();*/
+                if(isEnabled)getValuesInBaseCurrency();
               },
               child: Text('Calculate Total!')),
             new Text("$total in Total",//"Total: $total",
@@ -264,6 +265,7 @@ class _PieChartState extends State<PieChartWidget> {
     });
     print(total);
 
+    disableButton();
 
     return total;
   }
@@ -277,7 +279,7 @@ class _PieChartState extends State<PieChartWidget> {
   disableButton(){
 
     setState(() {
-      isEnabled = true;
+      isEnabled = false;
     });
   }
 }
