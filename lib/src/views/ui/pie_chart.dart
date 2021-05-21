@@ -14,25 +14,32 @@ class PieChartWidget extends StatefulWidget {
 
   final String base;
   final List<String> symbols;
+  final Map<String, double> money;
 
-  PieChartWidget(this.base, this.symbols);
+  PieChartWidget(this.base, this.symbols, this.money);
 
   @override
   _PieChartState createState() =>
-    _PieChartState(base,  symbols);
+    _PieChartState(base,  symbols, money);
 
 }
 
 
 
 Future<String> getResponse(base, symbols) async {
-  print(base);
-  String symbolsString=symbols[0];
+  //print(base);
+  String symbolsString;
+  //Because of the list space
+  if(symbols[0]!=base)
+    symbolsString=symbols[0];
+  else
+    symbolsString=symbols[1];
+
   for(int i=1; i<symbols.length; i++){
-    if(symbols[i]!=base)
-      symbolsString ='$symbolsString'+','+symbols[i];
+    if(symbols[i]!=base){
+      symbolsString ='$symbolsString'+','+symbols[i];}
   }
-  print(symbolsString);
+  //print(symbolsString);
   final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
       { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
         'base': base,
@@ -52,10 +59,14 @@ class _PieChartState extends State<PieChartWidget> {
 
   String base;
   List<String> symbols;
+  Map<String, double> money;
+
+
+  Map<String, double> moneyInBaseCurrency;
 
   Map rates;
 
-  _PieChartState(String base,  List<String> symbols);
+  _PieChartState(String base,  List<String> symbols, Map<String, double> money);
 
 
   @override
@@ -63,10 +74,14 @@ class _PieChartState extends State<PieChartWidget> {
     //print(widget.base);
     base=widget.base;
     symbols=widget.symbols;
+    money=widget.money;
+    moneyInBaseCurrency=widget.money;
+
     setState(() {
       message = getResponse(base, symbols);
     });
   }
+
 
 
   //Criar uma caixa de texto com o valor total na moeda selecionada
@@ -121,7 +136,10 @@ class _PieChartState extends State<PieChartWidget> {
                 else if (snapshot.hasError)
                   return Text('${snapshot.error}');
                 return CircularProgressIndicator();
-              })
+              }),
+            TextButton(
+                onPressed: () {return getValuesInBaseCurrency(); },
+                child: Text('Press Me!'))
           ],
         ),
       ),
@@ -135,7 +153,7 @@ class _PieChartState extends State<PieChartWidget> {
   //Cria um chart com 4 partes e cada parte tem um valor default.
   //Isto tem de vir da lista da outra pagina
   List<PieChartSectionData> showingSections() {
-    return List.generate(4, (i) {
+    return List.generate(money.length, (i) {
       final isTouched = i == touchedIndex;
       final fontSize = isTouched ? 25.0 : 16.0;
       final radius = isTouched ? 60.0 : 50.0;
@@ -199,18 +217,45 @@ class _PieChartState extends State<PieChartWidget> {
     
     var rat = Rate.fromJson(ratesMap);
 
-    print(' ${rat.rates}');
+    //print(' ${rat.rates}');
     rates=rat.rates;
 
-    getValuesInBaseCurrency();
+    //getValuesInBaseCurrency();
   }
 
-  void getValuesInBaseCurrency() {
-    print("Final");
+  double getValuesInBaseCurrency() {
+    //print("Final");
     print(rates);
-    /*for(int i=0; i<rat.lenght; i++){
-      print(rat[i]);
-    }*/
+    print("Money ");
+    print(money);
+
+    double total=0;
+
+    /*{DZD: 162.00712}
+    Money
+    {DZD: 2, EUR: 0}*/
+
+    money.entries.forEach((quantity) {
+      //print(quantity);
+      rates.entries.forEach((rate) {
+        if(rate.key==quantity.key){
+          moneyInBaseCurrency.update(rate.key, (value) => quantity.value/rate.value);
+        }
+      });
+    });
+    print(moneyInBaseCurrency);
+
+    moneyInBaseCurrency.values.forEach((value) {
+      total=total+value;
+    });
+    print(total);
+
+    return total;
+
+
+
+
+    //multiplicar a quantidade X pelo rate
     /*rates.keys.forEach((key) {
       print(key);
     });
