@@ -1,19 +1,47 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'app_bar.dart';
 
+// ignore: must_be_immutable
 class PieChartWidget extends StatefulWidget {
+
   PieChartWidget({Key key}) : super(key: key);
 
   @override
   _PieChartState createState() => _PieChartState();
 }
 
+Future<String> getResponse() async {
+  final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
+      { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
+        'base': 'EUR',
+        'symbols': 'USD,GBP'}
+  ));
+  if (response.statusCode == 200)
+    return response.body;
+  else
+    throw Exception('HTTP failed');
+}
+
+
 class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
+  Future<String> message = Future<String>.value('');
+
+  @override
+  // ignore: must_call_super
+  void initState() {
+    setState(() {
+      message = getResponse();
+    });
+  }
+
+
+  //Criar uma caixa de texto com o valor total na moeda selecionada
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -47,6 +75,23 @@ class _PieChartState extends State<PieChartWidget> {
                     sections: showingSections()),
               ),
             ),
+            /*ElevatedButton(
+                child: Text('Do Request'),
+                onPressed: () {
+                  setState(() {
+                    message = getResponse();
+                  });
+                }
+            ),*/
+            FutureBuilder<String> (
+              future: message,
+              builder: (context, snapshot) {
+                if (snapshot.hasData)
+                  return Text(snapshot.data);
+                else if (snapshot.hasError)
+                  return Text('${snapshot.error}');
+                return CircularProgressIndicator();
+              })
           ],
         ),
       ),
@@ -57,6 +102,8 @@ class _PieChartState extends State<PieChartWidget> {
     );
   }
 
+  //Cria um chart com 4 partes e cada parte tem um valor default.
+  //Isto tem de vir da lista da outra pagina
   List<PieChartSectionData> showingSections() {
     return List.generate(4, (i) {
       final isTouched = i == touchedIndex;

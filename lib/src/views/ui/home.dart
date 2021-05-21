@@ -16,10 +16,11 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   /*IR BUSCAR CURRENCIES DO USER A SQL Lite*/
-  List<Locale> myCurrencies;
+  List<Locale> myCurrencies; //moedas
   List<Locale> supportedLocales;
-  List<int> _currencyAmounts;
+  List<int> _currencyAmounts; //valor de cada moeda
 
+  //API_KEY = 278379fff23019b5e4ceb3d7c73ca717
   @override
   void initState() {
     super.initState();
