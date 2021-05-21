@@ -2,23 +2,39 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:developer';
+import 'dart:core';
 
 import 'app_bar.dart';
 
-// ignore: must_be_immutable
+
 class PieChartWidget extends StatefulWidget {
 
-  PieChartWidget({Key key}) : super(key: key);
+  final String base;
+  final List<String> symbols;
+
+  PieChartWidget(this.base, this.symbols);
 
   @override
-  _PieChartState createState() => _PieChartState();
+  _PieChartState createState() =>
+    _PieChartState(base,  symbols);
+
 }
 
-Future<String> getResponse() async {
+
+
+Future<String> getResponse(base, symbols) async {
+  print(base);
+  String symbolsString=symbols[0];
+  for(int i=1; i<symbols.length; i++){
+    if(symbols[i]!=base)
+      symbolsString ='$symbolsString'+','+symbols[i];
+  }
+  print(symbolsString);
   final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
       { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
-        'base': 'EUR',
-        'symbols': 'USD,GBP'}
+        'base': base,
+        'symbols': symbolsString}
   ));
   if (response.statusCode == 200)
     return response.body;
@@ -32,11 +48,18 @@ class _PieChartState extends State<PieChartWidget> {
 
   Future<String> message = Future<String>.value('');
 
+  String base;
+  List<String> symbols;
+
+  _PieChartState(String base,  List<String> symbols);
+
   @override
-  // ignore: must_call_super
   void initState() {
+    //print(widget.base);
+    base=widget.base;
+    symbols=widget.symbols;
     setState(() {
-      message = getResponse();
+      message = getResponse(base, symbols);
     });
   }
 
@@ -79,7 +102,7 @@ class _PieChartState extends State<PieChartWidget> {
                 child: Text('Do Request'),
                 onPressed: () {
                   setState(() {
-                    message = getResponse();
+                    mostrar(this.myCurrencies, this._currencyAmounts);
                   });
                 }
             ),*/

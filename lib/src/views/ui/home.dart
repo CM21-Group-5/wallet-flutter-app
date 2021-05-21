@@ -2,6 +2,7 @@ import 'package:cm_pratical_assignment_2/src/views/ui/pie_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/number_symbols_data.dart';
+import 'dart:core';
 
 import 'app_bar.dart';
 
@@ -17,8 +18,11 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   /*IR BUSCAR CURRENCIES DO USER A SQL Lite*/
   List<Locale> myCurrencies; //moedas
-  List<Locale> supportedLocales;
+  List<Locale> supportedLocales; //minhas moedas
   List<int> _currencyAmounts; //valor de cada moeda
+
+  String base;
+  List<String> symbols;
 
   //API_KEY = 278379fff23019b5e4ceb3d7c73ca717
   @override
@@ -27,6 +31,8 @@ class _HomeState extends State<Home> {
     supportedLocales = [];
     _currencyAmounts = [];
     myCurrencies = [];
+
+    symbols = [];
 
     myCurrencies = numberFormatSymbols.keys
         .where((key) => key.toString().contains('_'))
@@ -82,6 +88,7 @@ class _HomeState extends State<Home> {
                   final item = supportedLocales[index];
                   final currencyCode =
                       numberFormatSymbols[item.toString()].DEF_CURRENCY_CODE;
+                  //**********************************************************************************************
                   final flagPath = currencyCode.toLowerCase();
                   final currencySymbol =
                       NumberFormat.simpleCurrency(locale: item.toString())
@@ -144,13 +151,17 @@ class _HomeState extends State<Home> {
                       ],
                     ),
                     isThreeLine: true,
-                    onLongPress: () => {_remove(item)},
-                    onTap: () => {
+                    onLongPress: () => {_remove(item, currencyCode)},
+                    onTap: () {
+                     // ***********************************************************************************
+                      base=currencyCode;
+                      print("base "+base);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => PieChartWidget()),
-                      )
+                          //FALTA AS QUANTIDADES DE CADA MOEDA
+                            builder: (context) => PieChartWidget(base, symbols)),
+                      );
                     },
                   );
                 },
@@ -177,6 +188,9 @@ class _HomeState extends State<Home> {
   }
 
   void _addCurrency() {
+    print(_currencyAmounts);
+    print(supportedLocales);
+    //print(NumberFormat.simpleCurrency(locale: item.toString()).currencySymbol);
     showDialog(
       context: context,
       builder: (context) {
@@ -248,7 +262,11 @@ class _HomeState extends State<Home> {
                                     Icons.add,
                                     color: Colors.white,
                                   )),
-                              onTap: () => _add(context, item),
+                              onTap: () {
+                                _add(context, item, currencyCode);
+                                //*****************************************************************************************
+
+                              }
                             ),
                           ),
                         ),
@@ -276,18 +294,24 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void _add(context, locale) {
+  void _add(context, locale, currencyCode) {
     setState(() {
       supportedLocales.add(locale);
       myCurrencies.remove(locale);
+      symbols.add(currencyCode);
+      print(symbols);
     });
+    /*print(context);
+    print(locale);*/
     Navigator.pop(context);
   }
 
-  void _remove(locale) {
+  void _remove(locale, currencyCode) {
     setState(() {
       supportedLocales.remove(locale);
       myCurrencies.add(locale);
+      symbols.add(currencyCode);
+      print(symbols);
     });
   }
 }
