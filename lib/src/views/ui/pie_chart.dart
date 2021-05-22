@@ -7,6 +7,8 @@ import 'dart:core';
 import 'dart:convert';
 import 'package:async/async.dart';
 import '../../model/Rates.dart';
+import 'dart:math';
+import 'dart:ui';
 
 import 'app_bar.dart';
 
@@ -17,46 +19,22 @@ class PieChartWidget extends StatefulWidget {
   final List<String> symbols;
   final Map<String, double> money;
   //final AsyncMemoizer _memoizer= AsyncMemoizer();
+  final currencySymbol;
 
-  PieChartWidget(this.base, this.symbols, this.money);
+  PieChartWidget(this.base, this.symbols, this.money, this.currencySymbol);
 
   @override
   _PieChartState createState() =>
-    _PieChartState(base,  symbols, money);
+    _PieChartState(base,  symbols, money, currencySymbol);
 }
 
-Future<String> getResponse(base, symbols) async {
-  //await Future.delayed(Duration(seconds: 2));
-  String symbolsString;
-  //Because of the list space
-  if(symbols[0]!=base)
-    symbolsString=symbols[0];
-  else
-    symbolsString=symbols[1];
 
-  for(int i=1; i<symbols.length; i++){
-    if(symbols[i]!=base){
-      symbolsString ='$symbolsString'+','+symbols[i];}
-  }
-  //print(symbolsString);
-  final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
-      { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
-        'base': base,
-        'symbols': symbolsString}
-  ));
-  if (response.statusCode == 200)
-    return response.body;
-  else
-    throw Exception('HTTP failed');
-}
 
 
 class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
-
   Future<String> message = Future<String>.value('');
-  //String totalMessage=0;
 
   String base;
   List<String> symbols;
@@ -65,11 +43,13 @@ class _PieChartState extends State<PieChartWidget> {
   double total=0;
   Map<String, double> moneyInBaseCurrency;
   bool isEnabled=true;
+  var currencySymbol;
   //AsyncMemoizer _memoizer;
 
+  List<Color> colors;
   Map rates;
 
-  _PieChartState(String base,  List<String> symbols, Map<String, double> money);
+  _PieChartState(String base,  List<String> symbols, Map<String, double> money, currencySymbol);
 
 
   @override
@@ -80,20 +60,42 @@ class _PieChartState extends State<PieChartWidget> {
     symbols=widget.symbols;
     money=widget.money;
     moneyInBaseCurrency=widget.money;
+    currencySymbol=widget.currencySymbol;
 
     //_memoizer = AsyncMemoizer();
     message = getResponse(base, symbols);
-    //_memoizer = AsyncMemoizer();
 
-    /*setState(() {
+    colors=createColors(money);
+  }
 
-      *//*total = getValuesInBaseCurrency();*//*
-    });*/
+
+  Future<String> getResponse(base, symbols) async {
+    //await Future.delayed(Duration(seconds: 2));
+    String symbolsString;
+    //Because of the list space
+    if(symbols[0]!=base)
+      symbolsString=symbols[0];
+    else
+      symbolsString=symbols[1];
+
+    for(int i=1; i<symbols.length; i++){
+      if(symbols[i]!=base){
+        symbolsString ='$symbolsString'+','+symbols[i];}
+    }
+    //print(symbolsString);
+    final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
+        { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
+          'base': base,
+          'symbols': symbolsString}
+    ));
+    if (response.statusCode == 200)
+      return getRates(response.body).toString();
+    else
+      throw Exception('HTTP failed');
   }
 
 
 
-  //Criar uma caixa de texto com o valor total na moeda selecionada
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -101,13 +103,13 @@ class _PieChartState extends State<PieChartWidget> {
         child: Column(
           children: [
             new GradientAppBar("wallet"),
-            TextButton(
+            /*TextButton(
               onPressed: () {
-                /*setState((){
+                *//*setState((){
                   ();
-                });*/
-                /*getValuesInBaseCurrency();
-                disableButton();*/
+                });*//*
+                *//*getValuesInBaseCurrency();
+                disableButton();*//*
                 if(isEnabled)getValuesInBaseCurrency();
               },
               child: Text('Calculate Total!')),
@@ -117,8 +119,40 @@ class _PieChartState extends State<PieChartWidget> {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
                         fontSize: 17.0),
-            ),
+            ),*/
 
+            Padding(
+              padding: EdgeInsets.only(top: 20.0)
+              ),
+
+            new Text("Total:",
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 17.0),
+            ),
+            FutureBuilder<String> (
+                future: message,
+                builder: (context, snapshot) {
+                  if(snapshot.connectionState == ConnectionState.done){
+                    if (snapshot.hasData){
+                      var res=num.tryParse(snapshot.data)?.toDouble();
+                      return Text((res).toStringAsFixed(3)+"$currencySymbol",//"Total: $total",
+                        style: const TextStyle(
+                            color: Colors.black,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 17.0),);
+                    }
+                    else if (snapshot.hasError)
+                      if(money.length==1)
+                        return Text(money.values.first.toStringAsFixed(3) + " " +money.keys.first);
+                      return Text('Cannot convert to $base\n You can only convert to EUR');//${snapshot.error}
+                    return CircularProgressIndicator();
+                  }
+                  return CircularProgressIndicator();
+                }),
             Expanded(
               child: PieChart(
                 PieChartData(
@@ -142,26 +176,10 @@ class _PieChartState extends State<PieChartWidget> {
                     ),
                     sectionsSpace: 0,
                     centerSpaceRadius: 100,
-                    sections: showingSections()),
+                    sections: showingSections()
+                ),
               ),
             ),
-
-            FutureBuilder<String> (
-              future: message,
-              builder: (context, snapshot) {
-                //if(snapshot.connectionState == ConnectionState.done){
-                  if (snapshot.hasData){
-                      getRates(snapshot.data);
-                      return Text(snapshot.data);
-                  }
-                else if (snapshot.hasError)
-                  return Text('${snapshot.error}');
-                return CircularProgressIndicator();
-                /*}
-                return CircularProgressIndicator();*/
-
-              }),
-
           ],
         ),
       ),
@@ -172,84 +190,44 @@ class _PieChartState extends State<PieChartWidget> {
     );
   }
 
-  //Cria um chart com 4 partes e cada parte tem um valor default.
-  //Isto tem de vir da lista da outra pagina
+
   List<PieChartSectionData> showingSections() {
-    /*List<double> values=moneyInBaseCurrency.values.toList();
-    List<String> name=moneyInBaseCurrency.keys.toList();*/
+    List<double> values=money.values.toList();
+    List<double> valuesInBase=moneyInBaseCurrency.values.toList();
+    List<String> name=money.keys.toList();
     return List.generate(moneyInBaseCurrency.length, (i) {
       final isTouched = i == touchedIndex;
-      final fontSize = isTouched ? 25.0 : 16.0;
+      final fontSize = isTouched ? 25.0 : 14.0;
       final radius = isTouched ? 60.0 : 50.0;
 
-
-      switch (i) {
-        case 0:
-          return PieChartSectionData(
-            color: const Color(0xff0293ee),
-            value: 40,
-            title: '40%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        case 1:
-          return PieChartSectionData(
-            color: const Color(0xfff8b250),
-            value: 30,
-            title: '30%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        case 2:
-          return PieChartSectionData(
-            color: const Color(0xff845bef),
-            value: 15,
-            title: '15%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        case 3:
-          return PieChartSectionData(
-            color: const Color(0xff13d38e),
-            value: 15,
-            title: '15%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        default:
-          throw Error();
-      }
+      return PieChartSectionData(
+          color: colors[i],//Color(Random().nextInt(0xffffffff)).withAlpha(0xff),
+          value: valuesInBase[i],
+          title: values[i].toStringAsFixed(2) +" " +name[i],
+          radius: radius,
+          titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: Colors.black)//const Color(0xffffffff))
+      );
     });
   }
 
-  void getRates(String data) {
+  double getRates(String data) {
     Map<String, dynamic> ratesMap = jsonDecode(data);
 
     var rat = Rate.fromJson(ratesMap);
-
     //print(' ${rat.rates}');
     rates=rat.rates;
 
-    //getValuesInBaseCurrency();
+    return getValuesInBaseCurrency();
   }
 
   double getValuesInBaseCurrency() {
+    print("Rates");
     print(rates);
     print("Money ");
     print(money);
-
 
     money.entries.forEach((quantity) {
       rates.entries.forEach((rate) {
@@ -259,13 +237,12 @@ class _PieChartState extends State<PieChartWidget> {
       });
     });
     print(moneyInBaseCurrency);
-
     moneyInBaseCurrency.values.forEach((value) {
       total=total+value;
     });
-    print(total);
+    print("Total "+ total.toString());
 
-    disableButton();
+    //disableButton();
 
     return total;
   }
@@ -281,5 +258,9 @@ class _PieChartState extends State<PieChartWidget> {
     setState(() {
       isEnabled = false;
     });
+  }
+
+  List<Color> createColors(Map<String, double> money) {
+    return List.generate(money.length, (i) => Color(Random().nextInt(0xffffffff))); //.withAlpha(0xff)
   }
 }
