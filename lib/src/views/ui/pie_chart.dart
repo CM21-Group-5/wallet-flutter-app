@@ -7,6 +7,8 @@ import 'dart:core';
 import 'dart:convert';
 import 'package:async/async.dart';
 import '../../model/Rates.dart';
+import 'dart:math';
+import 'dart:ui';
 
 import 'app_bar.dart';
 
@@ -44,6 +46,7 @@ class _PieChartState extends State<PieChartWidget> {
   var currencySymbol;
   //AsyncMemoizer _memoizer;
 
+  List<Color> colors;
   Map rates;
 
   _PieChartState(String base,  List<String> symbols, Map<String, double> money, currencySymbol);
@@ -61,7 +64,11 @@ class _PieChartState extends State<PieChartWidget> {
 
     //_memoizer = AsyncMemoizer();
     message = getResponse(base, symbols);
+
+    colors=createColors(money);
   }
+
+
   Future<String> getResponse(base, symbols) async {
     //await Future.delayed(Duration(seconds: 2));
     String symbolsString;
@@ -118,7 +125,7 @@ class _PieChartState extends State<PieChartWidget> {
               padding: EdgeInsets.only(top: 20.0)
               ),
 
-            new Text("Total:",//"Total: $total",
+            new Text("Total:",
               style: const TextStyle(
                   color: Colors.black,
                   fontFamily: 'Poppins',
@@ -139,7 +146,7 @@ class _PieChartState extends State<PieChartWidget> {
                             fontSize: 17.0),);
                     }
                     else if (snapshot.hasError)
-                      return Text('${snapshot.error}');
+                      return Text('Cannot convert to $base\n You can only convert to EUR');//${snapshot.error}
                     return CircularProgressIndicator();
                   }
                   return CircularProgressIndicator();
@@ -167,7 +174,8 @@ class _PieChartState extends State<PieChartWidget> {
                     ),
                     sectionsSpace: 0,
                     centerSpaceRadius: 100,
-                    sections: showingSections()),
+                    sections: showingSections()
+                ),
               ),
             ),
           ],
@@ -180,65 +188,25 @@ class _PieChartState extends State<PieChartWidget> {
     );
   }
 
-  //Cria um chart com 4 partes e cada parte tem um valor default.
-  //Isto tem de vir da lista da outra pagina
+
   List<PieChartSectionData> showingSections() {
-    /*List<double> values=moneyInBaseCurrency.values.toList();
-    List<String> name=moneyInBaseCurrency.keys.toList();*/
+    List<double> values=money.values.toList();
+    List<String> name=money.keys.toList();
     return List.generate(moneyInBaseCurrency.length, (i) {
       final isTouched = i == touchedIndex;
-      final fontSize = isTouched ? 25.0 : 16.0;
+      final fontSize = isTouched ? 25.0 : 14.0;
       final radius = isTouched ? 60.0 : 50.0;
 
-
-      switch (i) {
-        case 0:
-          return PieChartSectionData(
-            color: const Color(0xff0293ee),
-            value: 40,
-            title: '40%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        case 1:
-          return PieChartSectionData(
-            color: const Color(0xfff8b250),
-            value: 30,
-            title: '30%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        case 2:
-          return PieChartSectionData(
-            color: const Color(0xff845bef),
-            value: 15,
-            title: '15%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        case 3:
-          return PieChartSectionData(
-            color: const Color(0xff13d38e),
-            value: 15,
-            title: '15%',
-            radius: radius,
-            titleStyle: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xffffffff)),
-          );
-        default:
-          throw Error();
-      }
+      return PieChartSectionData(
+          color: colors[i],//Color(Random().nextInt(0xffffffff)).withAlpha(0xff),
+      value: values[i],
+      title: values[i].toStringAsFixed(2) +" " +name[i],
+      radius: radius,
+      titleStyle: TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight.bold,
+      color: Colors.black)//const Color(0xffffffff))
+      );
     });
   }
 
@@ -246,7 +214,6 @@ class _PieChartState extends State<PieChartWidget> {
     Map<String, dynamic> ratesMap = jsonDecode(data);
 
     var rat = Rate.fromJson(ratesMap);
-
     //print(' ${rat.rates}');
     rates=rat.rates;
 
@@ -289,5 +256,9 @@ class _PieChartState extends State<PieChartWidget> {
     setState(() {
       isEnabled = false;
     });
+  }
+
+  List<Color> createColors(Map<String, double> money) {
+    return List.generate(money.length, (i) => Color(Random().nextInt(0xffffffff))); //.withAlpha(0xff)
   }
 }
