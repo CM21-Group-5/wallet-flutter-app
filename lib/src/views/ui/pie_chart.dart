@@ -193,6 +193,7 @@ class _PieChartState extends State<PieChartWidget> {
 
   List<PieChartSectionData> showingSections() {
     List<double> values=money.values.toList();
+    List<double> valuesInBase=moneyInBaseCurrency.values.toList();
     List<String> name=money.keys.toList();
     return List.generate(moneyInBaseCurrency.length, (i) {
       final isTouched = i == touchedIndex;
@@ -201,13 +202,13 @@ class _PieChartState extends State<PieChartWidget> {
 
       return PieChartSectionData(
           color: colors[i],//Color(Random().nextInt(0xffffffff)).withAlpha(0xff),
-      value: values[i],
-      title: values[i].toStringAsFixed(2) +" " +name[i],
-      radius: radius,
-      titleStyle: TextStyle(
-      fontSize: fontSize,
-      fontWeight: FontWeight.bold,
-      color: Colors.black)//const Color(0xffffffff))
+          value: valuesInBase[i],
+          title: values[i].toStringAsFixed(2) +" " +name[i],
+          radius: radius,
+          titleStyle: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.bold,
+          color: Colors.black)//const Color(0xffffffff))
       );
     });
   }
@@ -228,13 +229,6 @@ class _PieChartState extends State<PieChartWidget> {
     print("Money ");
     print(money);
 
-    /*//if there is only one coin
-    if(money.length==1){
-      total=money.values.first;
-    }else{
-
-    }
-*/
     money.entries.forEach((quantity) {
       rates.entries.forEach((rate) {
         if(rate.key==quantity.key){
@@ -242,11 +236,11 @@ class _PieChartState extends State<PieChartWidget> {
         }
       });
     });
-    //print(moneyInBaseCurrency);
+    print(moneyInBaseCurrency);
     moneyInBaseCurrency.values.forEach((value) {
       total=total+value;
     });
-    print(total);
+    print("Total "+ total.toString());
 
     //disableButton();
 
