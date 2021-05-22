@@ -146,6 +146,8 @@ class _PieChartState extends State<PieChartWidget> {
                             fontSize: 17.0),);
                     }
                     else if (snapshot.hasError)
+                      if(money.length==1)
+                        return Text(money.values.first.toStringAsFixed(3) + " " +money.keys.first);
                       return Text('Cannot convert to $base\n You can only convert to EUR');//${snapshot.error}
                     return CircularProgressIndicator();
                   }
@@ -221,11 +223,18 @@ class _PieChartState extends State<PieChartWidget> {
   }
 
   double getValuesInBaseCurrency() {
+    print("Rates");
     print(rates);
     print("Money ");
     print(money);
 
+    /*//if there is only one coin
+    if(money.length==1){
+      total=money.values.first;
+    }else{
 
+    }
+*/
     money.entries.forEach((quantity) {
       rates.entries.forEach((rate) {
         if(rate.key==quantity.key){
@@ -233,14 +242,13 @@ class _PieChartState extends State<PieChartWidget> {
         }
       });
     });
-    print(moneyInBaseCurrency);
-
+    //print(moneyInBaseCurrency);
     moneyInBaseCurrency.values.forEach((value) {
       total=total+value;
     });
     print(total);
 
-    disableButton();
+    //disableButton();
 
     return total;
   }
