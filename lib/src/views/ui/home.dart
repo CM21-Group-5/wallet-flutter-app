@@ -94,7 +94,6 @@ class _HomeState extends State<Home> {
                   final item = supportedLocales[index];
                   final currencyCode =
                       numberFormatSymbols[item.toString()].DEF_CURRENCY_CODE;
-                  //**********************************************************************************************
                   final flagPath = currencyCode.toLowerCase();
                   final currencySymbol =
                       NumberFormat.simpleCurrency(locale: item.toString())
@@ -164,7 +163,7 @@ class _HomeState extends State<Home> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => PieChartWidget(base, symbols, money)),
+                            builder: (context) => PieChartWidget(base, symbols, money, currencySymbol)),
                       );
                     },
                   );
@@ -268,8 +267,6 @@ class _HomeState extends State<Home> {
                                   )),
                               onTap: () {
                                 _add(context, item, currencyCode);
-                                //*****************************************************************************************
-
                               }
                             ),
                           ),
@@ -304,11 +301,8 @@ class _HomeState extends State<Home> {
       myCurrencies.remove(locale);
       symbols.add(currencyCode);
       money[currencyCode]= 0;
-      //money.putIfAbsent(currencyCode, () => 0);
       //print(symbols);
     });
-    /*print(context);
-    print(locale);*/
     Navigator.pop(context);
   }
 

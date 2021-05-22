@@ -17,46 +17,22 @@ class PieChartWidget extends StatefulWidget {
   final List<String> symbols;
   final Map<String, double> money;
   //final AsyncMemoizer _memoizer= AsyncMemoizer();
+  final currencySymbol;
 
-  PieChartWidget(this.base, this.symbols, this.money);
+  PieChartWidget(this.base, this.symbols, this.money, this.currencySymbol);
 
   @override
   _PieChartState createState() =>
-    _PieChartState(base,  symbols, money);
+    _PieChartState(base,  symbols, money, currencySymbol);
 }
 
-Future<String> getResponse(base, symbols) async {
-  //await Future.delayed(Duration(seconds: 2));
-  String symbolsString;
-  //Because of the list space
-  if(symbols[0]!=base)
-    symbolsString=symbols[0];
-  else
-    symbolsString=symbols[1];
 
-  for(int i=1; i<symbols.length; i++){
-    if(symbols[i]!=base){
-      symbolsString ='$symbolsString'+','+symbols[i];}
-  }
-  //print(symbolsString);
-  final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
-      { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
-        'base': base,
-        'symbols': symbolsString}
-  ));
-  if (response.statusCode == 200)
-    return response.body;
-  else
-    throw Exception('HTTP failed');
-}
 
 
 class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
-
   Future<String> message = Future<String>.value('');
-  //String totalMessage=0;
 
   String base;
   List<String> symbols;
@@ -65,11 +41,12 @@ class _PieChartState extends State<PieChartWidget> {
   double total=0;
   Map<String, double> moneyInBaseCurrency;
   bool isEnabled=true;
+  var currencySymbol;
   //AsyncMemoizer _memoizer;
 
   Map rates;
 
-  _PieChartState(String base,  List<String> symbols, Map<String, double> money);
+  _PieChartState(String base,  List<String> symbols, Map<String, double> money, currencySymbol);
 
 
   @override
@@ -80,20 +57,38 @@ class _PieChartState extends State<PieChartWidget> {
     symbols=widget.symbols;
     money=widget.money;
     moneyInBaseCurrency=widget.money;
+    currencySymbol=widget.currencySymbol;
 
     //_memoizer = AsyncMemoizer();
     message = getResponse(base, symbols);
-    //_memoizer = AsyncMemoizer();
+  }
+  Future<String> getResponse(base, symbols) async {
+    //await Future.delayed(Duration(seconds: 2));
+    String symbolsString;
+    //Because of the list space
+    if(symbols[0]!=base)
+      symbolsString=symbols[0];
+    else
+      symbolsString=symbols[1];
 
-    /*setState(() {
-
-      *//*total = getValuesInBaseCurrency();*//*
-    });*/
+    for(int i=1; i<symbols.length; i++){
+      if(symbols[i]!=base){
+        symbolsString ='$symbolsString'+','+symbols[i];}
+    }
+    //print(symbolsString);
+    final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
+        { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
+          'base': base,
+          'symbols': symbolsString}
+    ));
+    if (response.statusCode == 200)
+      return getRates(response.body).toString();
+    else
+      throw Exception('HTTP failed');
   }
 
 
 
-  //Criar uma caixa de texto com o valor total na moeda selecionada
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -101,13 +96,13 @@ class _PieChartState extends State<PieChartWidget> {
         child: Column(
           children: [
             new GradientAppBar("wallet"),
-            TextButton(
+            /*TextButton(
               onPressed: () {
-                /*setState((){
+                *//*setState((){
                   ();
-                });*/
-                /*getValuesInBaseCurrency();
-                disableButton();*/
+                });*//*
+                *//*getValuesInBaseCurrency();
+                disableButton();*//*
                 if(isEnabled)getValuesInBaseCurrency();
               },
               child: Text('Calculate Total!')),
@@ -117,8 +112,38 @@ class _PieChartState extends State<PieChartWidget> {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
                         fontSize: 17.0),
-            ),
+            ),*/
 
+            Padding(
+              padding: EdgeInsets.only(top: 20.0)
+              ),
+
+            new Text("Total:",//"Total: $total",
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 17.0),
+            ),
+            FutureBuilder<String> (
+                future: message,
+                builder: (context, snapshot) {
+                  if(snapshot.connectionState == ConnectionState.done){
+                    if (snapshot.hasData){
+                      var res=num.tryParse(snapshot.data)?.toDouble();
+                      return Text((res).toStringAsFixed(3)+"$currencySymbol",//"Total: $total",
+                        style: const TextStyle(
+                            color: Colors.black,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 17.0),);
+                    }
+                    else if (snapshot.hasError)
+                      return Text('${snapshot.error}');
+                    return CircularProgressIndicator();
+                  }
+                  return CircularProgressIndicator();
+                }),
             Expanded(
               child: PieChart(
                 PieChartData(
@@ -145,23 +170,6 @@ class _PieChartState extends State<PieChartWidget> {
                     sections: showingSections()),
               ),
             ),
-
-            FutureBuilder<String> (
-              future: message,
-              builder: (context, snapshot) {
-                //if(snapshot.connectionState == ConnectionState.done){
-                  if (snapshot.hasData){
-                      getRates(snapshot.data);
-                      return Text(snapshot.data);
-                  }
-                else if (snapshot.hasError)
-                  return Text('${snapshot.error}');
-                return CircularProgressIndicator();
-                /*}
-                return CircularProgressIndicator();*/
-
-              }),
-
           ],
         ),
       ),
@@ -234,7 +242,7 @@ class _PieChartState extends State<PieChartWidget> {
     });
   }
 
-  void getRates(String data) {
+  double getRates(String data) {
     Map<String, dynamic> ratesMap = jsonDecode(data);
 
     var rat = Rate.fromJson(ratesMap);
@@ -242,7 +250,7 @@ class _PieChartState extends State<PieChartWidget> {
     //print(' ${rat.rates}');
     rates=rat.rates;
 
-    //getValuesInBaseCurrency();
+    return getValuesInBaseCurrency();
   }
 
   double getValuesInBaseCurrency() {
