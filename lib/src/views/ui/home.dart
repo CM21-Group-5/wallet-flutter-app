@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:cm_pratical_assignment_2/src/services/SQLiteCurrencyStorage.dart';
+import 'package:cm_pratical_assignment_2/src/model/Currency.dart';
 import 'package:cm_pratical_assignment_2/src/views/ui/pie_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -22,10 +24,17 @@ class _HomeState extends State<Home> {
   List<Locale> myCurrencies; //moedas
   List<Locale> supportedLocales; //minhas moedas
   List<int> _currencyAmounts; //valor de cada moeda
+  List<Currency> currencies;
 
   String base;
   List<String> symbols;
   Map<String, double> money;
+
+  void readFromDB() async {
+    currencies = await DBProvider.db.getCurrencies();
+    print("currencies");
+    print(currencies);
+  }
 
   //API_KEY = 278379fff23019b5e4ceb3d7c73ca717
   @override
@@ -34,6 +43,8 @@ class _HomeState extends State<Home> {
     supportedLocales = [];
     _currencyAmounts = [];
     myCurrencies = [];
+
+    readFromDB();
 
     symbols = [];
     money=new HashMap();
@@ -61,7 +72,16 @@ class _HomeState extends State<Home> {
     if (_currencyAmounts[currencyIndex] >= 1000) return;
     setState(() {
       _currencyAmounts[currencyIndex]++;
+
       money.update(currencyCode, (value) => _currencyAmounts[currencyIndex].toDouble());
+
+      Locale locale = myCurrencies[currencyIndex];
+      Currency currency = new Currency.alternative01(
+          locale.languageCode,
+          locale.countryCode,
+          _currencyAmounts[currencyIndex].toDouble());
+
+      DBProvider.db.updateCurrency(currency);
     });
   }
 
@@ -70,6 +90,14 @@ class _HomeState extends State<Home> {
     setState(() {
       _currencyAmounts[currencyIndex]--;
       money.update(currencyCode, (value) => _currencyAmounts[currencyIndex].toDouble());
+
+      Locale locale = myCurrencies[currencyIndex];
+      Currency currency = new Currency.alternative01(
+          locale.languageCode,
+          locale.countryCode,
+          _currencyAmounts[currencyIndex].toDouble());
+
+      DBProvider.db.updateCurrency(currency);
     });
   }
 
@@ -301,6 +329,11 @@ class _HomeState extends State<Home> {
       myCurrencies.remove(locale);
       symbols.add(currencyCode);
       money[currencyCode]= 0;
+      Currency currency = new Currency.alternative01(
+          locale.languageCode,
+          locale.countryCode,
+          0);
+      DBProvider.db.add(currency);
       //print(symbols);
     });
     Navigator.pop(context);
@@ -313,6 +346,11 @@ class _HomeState extends State<Home> {
       symbols.add(currencyCode);
       money.remove(currencyCode);
       //print(symbols);
+
+      Currency currency = new Currency.alternative02(
+          locale.languageCode,
+          locale.countryCode);
+      DBProvider.db.deleteCurrency(currency);
     });
   }
 }

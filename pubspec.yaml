@@ -26,6 +26,8 @@ dependencies:
   intl: ^0.17.0
   currency_icons: ^0.2.0
   fl_chart: ^0.36.1
+  sqflite:
+  path_provider:
 
 
   # The following adds the Cupertino Icons font to your application.
