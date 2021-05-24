@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cm_pratical_assignment_2/src/model/RatesDto.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -25,13 +26,18 @@ class DBProvider {
   initDB() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, "WalletDB.db");
-    return await openDatabase(path, version: 1, onOpen: (db) {},
+    return await openDatabase(path, version: 2, onOpen: (db) {},
         onCreate: (Database db, int version) async {
           await db.execute("CREATE TABLE Currency ("
               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
               "languageCode TEXT,"
               "countryCode TEXT,"
               "amount REAL"
+              ")");
+
+          await db.execute("CREATE TABLE Rates ("
+              "base TEXT PRIMARY KEY,"
+              "rates TEXT"
               ")");
         });
   }
@@ -93,5 +99,27 @@ class DBProvider {
   deleteAll() async {
     final db = await database;
     db.rawDelete("Delete * from Currency");
+  }
+
+
+  addRate(RatesDto ratesDto) async {
+    final db = await database;
+    //insert to the table using the new id
+    var raw = await db.rawInsert(
+        "INSERT OR REPLACE Into Rates (base,rates)"
+            " VALUES (?,?)",
+        [ratesDto.base, ratesDto.rates]);
+    return raw;
+  }
+
+  getRates(String base) async {
+    final db = await database;
+    var res = await db.query("Rates", where: "base = ?", whereArgs: [base]);
+    return res.isNotEmpty ? RatesDto.fromMap(res.first) : null;
+  }
+
+  deleteAllRates() async {
+    final db = await database;
+    db.rawDelete("Delete * from Rates");
   }
 }
