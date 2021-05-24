@@ -49,7 +49,9 @@ class DBProvider {
   update(Currency currency) async {
     final db = await database;
     var res = await db.update("Currency", currency.toMap(),
-        where: "id = ?", whereArgs: [currency.id]);
+        where: "id = ?",
+        whereArgs: [currency.id],
+        conflictAlgorithm: ConflictAlgorithm.replace);
     return res;
   }
 
@@ -57,7 +59,8 @@ class DBProvider {
     final db = await database;
     var res = await db.update("Currency", currency.toMap(),
         where: "languageCode = ? AND countryCode = ?",
-        whereArgs: [currency.languageCode, currency.countryCode]);
+        whereArgs: [currency.languageCode, currency.countryCode],
+        conflictAlgorithm: ConflictAlgorithm.replace);
     return res;
   }
 

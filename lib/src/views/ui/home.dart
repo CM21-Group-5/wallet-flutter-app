@@ -21,35 +21,52 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   /*IR BUSCAR CURRENCIES DO USER A SQL Lite*/
-  List<Locale> myCurrencies; //moedas
-  List<Locale> supportedLocales; //minhas moedas
-  List<int> _currencyAmounts; //valor de cada moeda
-  List<Currency> currencies;
+  List<Locale> supportedLocales; //moedas
+  List<Currency> myCurrencies; //minhas moedas
+  // List<int> _currencyAmounts; //valor de cada moeda
+  // List<Currency> currencies;
 
+  // fields to neeeded when moving to next screen
   String base;
   List<String> symbols;
   Map<String, double> money;
 
   void readFromDB() async {
-    currencies = await DBProvider.db.getCurrencies();
-    print("currencies");
-    print(currencies);
+    myCurrencies = await DBProvider.db.getCurrencies();
+
+    // setup remaining variables
+    for (Currency currency in myCurrencies) {
+
+      // get locale
+      final Locale locale = new Locale(
+          currency.languageCode,
+          currency.countryCode);
+
+      // get currency code
+      final currencyCode =
+          numberFormatSymbols[locale.toString()].DEF_CURRENCY_CODE;
+
+      // remove from support locales, in order to remove from popup list
+      supportedLocales.remove(locale);
+
+      // set fields for following screen
+      symbols.add(currencyCode);
+      money[currencyCode] = currency.amount;
+    }
+
+    setState(() {
+      print("currencies");
+      print(myCurrencies);
+    });
   }
 
   //API_KEY = 278379fff23019b5e4ceb3d7c73ca717
   @override
   void initState() {
     super.initState();
-    supportedLocales = [];
-    _currencyAmounts = [];
-    myCurrencies = [];
 
-    readFromDB();
-
-    symbols = [];
-    money=new HashMap();
-
-    myCurrencies = numberFormatSymbols.keys
+    // set supported locales
+    supportedLocales = numberFormatSymbols.keys
         .where((key) => key.toString().contains('_'))
         .map((key) => key.toString().split('_'))
         .map((split) => Locale(split[0], split[1]))
@@ -57,47 +74,87 @@ class _HomeState extends State<Home> {
 
     List<String> aux = [];
     List<Locale> auxList = [];
-    for (var element in myCurrencies) {
+    for (var element in supportedLocales) {
       String code = numberFormatSymbols[element.toString()].DEF_CURRENCY_CODE;
       if (!aux.contains(code)) {
         aux.add(code);
-        _currencyAmounts.add(0);
         auxList.add(element);
       }
     }
-    myCurrencies = auxList;
+    supportedLocales = auxList;
+
+    // initialize empty list
+    myCurrencies = [];
+    symbols = [];
+    money = new HashMap();
+
+    readFromDB();
   }
 
+  // increment currency value
   void _incrementCurrencyValue(int currencyIndex, currencyCode) {
-    if (_currencyAmounts[currencyIndex] >= 1000) return;
+    Currency currency = myCurrencies[currencyIndex];
+    if (currency.amount >= 1000) return;
     setState(() {
-      _currencyAmounts[currencyIndex]++;
+      currency.amount++;
 
-      money.update(currencyCode, (value) => _currencyAmounts[currencyIndex].toDouble());
-
-      Locale locale = myCurrencies[currencyIndex];
-      Currency currency = new Currency.alternative01(
-          locale.languageCode,
-          locale.countryCode,
-          _currencyAmounts[currencyIndex].toDouble());
+      money.update(currencyCode, (value) => currency.amount.toDouble());
 
       DBProvider.db.updateCurrency(currency);
     });
   }
 
+  // decrement currency value
   void _decrementCurrencyValue(int currencyIndex, currencyCode) {
-    if (_currencyAmounts[currencyIndex] <= 0) return;
+    Currency currency = myCurrencies[currencyIndex];
+    if (currency.amount <= 0) return;
     setState(() {
-      _currencyAmounts[currencyIndex]--;
-      money.update(currencyCode, (value) => _currencyAmounts[currencyIndex].toDouble());
 
-      Locale locale = myCurrencies[currencyIndex];
+      currency.amount--;
+
+      money.update(currencyCode, (value) => currency.amount.toDouble());
+
+      DBProvider.db.updateCurrency(currency);
+    });
+  }
+
+  // add currency to wallet
+  void _add(context, locale, currencyCode) {
+    setState(() {
       Currency currency = new Currency.alternative01(
           locale.languageCode,
           locale.countryCode,
-          _currencyAmounts[currencyIndex].toDouble());
+          0);
+      // add to wallet
+      myCurrencies.add(currency);
 
-      DBProvider.db.updateCurrency(currency);
+      // remove from support locales, in order to remove from popup list
+      supportedLocales.remove(locale);
+
+      // set fields for following screen
+      symbols.add(currencyCode);
+      money[currencyCode]= 0;
+
+      // add to sqlite
+      DBProvider.db.add(currency);
+    });
+    Navigator.pop(context);
+  }
+
+  void _remove(Currency currency, currencyCode) {
+    setState(() {
+
+      // remove from wallet
+      myCurrencies.remove(currency);
+
+      // add locale back to supported locales
+      supportedLocales.add(new Locale(currency.languageCode, currency.countryCode));
+
+      // set fields for next screen
+      symbols.add(currencyCode);
+      money.remove(currencyCode);
+
+      DBProvider.db.deleteCurrency(currency);
     });
   }
 
@@ -115,16 +172,17 @@ class _HomeState extends State<Home> {
                 shrinkWrap: true,
                 padding: const EdgeInsets.all(20.0),
                 // Let the ListView know how many items it needs to build.
-                itemCount: supportedLocales.length,
+                itemCount: myCurrencies.length,
                 // Provide a builder function. This is where the magic happens.
                 // Convert each item into a widget based on the type of item it is.
                 itemBuilder: (context, index) {
-                  final item = supportedLocales[index];
+                  final item = myCurrencies[index];
+                  final Locale locale = new Locale(item.languageCode, item.countryCode);
                   final currencyCode =
-                      numberFormatSymbols[item.toString()].DEF_CURRENCY_CODE;
+                      numberFormatSymbols[locale.toString()].DEF_CURRENCY_CODE;
                   final flagPath = currencyCode.toLowerCase();
                   final currencySymbol =
-                      NumberFormat.simpleCurrency(locale: item.toString())
+                      NumberFormat.simpleCurrency(locale: locale.toString())
                           .currencySymbol;
                   return ListTile(
                     leading: Image.asset('icons/currency/$flagPath.png',
@@ -138,7 +196,7 @@ class _HomeState extends State<Home> {
                           fontSize: 16.0),
                     ),
                     title: Text(
-                      _currencyAmounts[index].toString() + " " + currencySymbol,
+                      myCurrencies[index].amount.toString() + " " + currencySymbol,
                       style: const TextStyle(
                           color: Colors.grey,
                           fontFamily: 'Poppins',
@@ -187,7 +245,7 @@ class _HomeState extends State<Home> {
                     onLongPress: () => {_remove(item, currencyCode)},
                     onTap: () {
                      // ***********************************************************************************
-                      base=currencyCode;
+                      base = currencyCode;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -253,11 +311,11 @@ class _HomeState extends State<Home> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.all(10.0),
                     // Let the ListView know how many items it needs to build.
-                    itemCount: myCurrencies.length,
+                    itemCount: supportedLocales.length,
                     // Provide a builder function. This is where the magic happens.
                     // Convert each item into a widget based on the type of item it is.
                     itemBuilder: (context, index) {
-                      final item = myCurrencies[index];
+                      final item = supportedLocales[index];
                       final currencyCode = numberFormatSymbols[item.toString()]
                           .DEF_CURRENCY_CODE;
                       final flagPath = currencyCode.toLowerCase();
@@ -321,36 +379,5 @@ class _HomeState extends State<Home> {
         );
       },
     );
-  }
-
-  void _add(context, locale, currencyCode) {
-    setState(() {
-      supportedLocales.add(locale);
-      myCurrencies.remove(locale);
-      symbols.add(currencyCode);
-      money[currencyCode]= 0;
-      Currency currency = new Currency.alternative01(
-          locale.languageCode,
-          locale.countryCode,
-          0);
-      DBProvider.db.add(currency);
-      //print(symbols);
-    });
-    Navigator.pop(context);
-  }
-
-  void _remove(locale, currencyCode) {
-    setState(() {
-      supportedLocales.remove(locale);
-      myCurrencies.add(locale);
-      symbols.add(currencyCode);
-      money.remove(currencyCode);
-      //print(symbols);
-
-      Currency currency = new Currency.alternative02(
-          locale.languageCode,
-          locale.countryCode);
-      DBProvider.db.deleteCurrency(currency);
-    });
   }
 }
