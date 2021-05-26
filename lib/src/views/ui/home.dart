@@ -28,8 +28,6 @@ class _HomeState extends State<Home> {
 
   // fields to neeeded when moving to next screen
   String base;
-  List<String> symbols;
-  Map<String, double> money;
 
   void readFromDB() async {
     myCurrencies = await DBProvider.db.getCurrencies();
@@ -48,10 +46,6 @@ class _HomeState extends State<Home> {
 
       // remove from support locales, in order to remove from popup list
       supportedLocales.remove(locale);
-
-      // set fields for following screen
-      symbols.add(currencyCode);
-      money[currencyCode] = currency.amount;
     }
 
     setState(() {
@@ -85,8 +79,6 @@ class _HomeState extends State<Home> {
 
     // initialize empty list
     myCurrencies = [];
-    symbols = [];
-    money = new HashMap();
 
     readFromDB();
   }
@@ -97,8 +89,6 @@ class _HomeState extends State<Home> {
     if (currency.amount >= 1000) return;
     setState(() {
       currency.amount++;
-
-      money.update(currencyCode, (value) => currency.amount.toDouble());
 
       DBProvider.db.updateCurrency(currency);
     });
@@ -112,8 +102,6 @@ class _HomeState extends State<Home> {
 
       currency.amount--;
 
-      money.update(currencyCode, (value) => currency.amount.toDouble());
-
       DBProvider.db.updateCurrency(currency);
     });
   }
@@ -125,16 +113,13 @@ class _HomeState extends State<Home> {
           locale.languageCode,
           locale.countryCode,
           currencySymbol,
+          currencyCode,
           0);
       // add to wallet
       myCurrencies.add(currency);
 
       // remove from support locales, in order to remove from popup list
       supportedLocales.remove(locale);
-
-      // set fields for following screen
-      symbols.add(currencyCode);
-      money[currencyCode]= 0;
 
       // add to sqlite
       DBProvider.db.add(currency);
@@ -150,10 +135,6 @@ class _HomeState extends State<Home> {
 
       // add locale back to supported locales
       supportedLocales.add(new Locale(currency.languageCode, currency.countryCode));
-
-      // set fields for next screen
-      symbols.add(currencyCode);
-      money.remove(currencyCode);
 
       DBProvider.db.deleteCurrency(currency);
     });
@@ -251,9 +232,8 @@ class _HomeState extends State<Home> {
                         context,
                         MaterialPageRoute(
                             builder: (context) => PieChartWidget(base,
-                                symbols,
-                                money,
-                                currencySymbol)//,
+                                currencySymbol,
+                                myCurrencies)//,
                                 // myCurrencies.map((e) => e.currencySymbol).toList())
                         ),
                       );

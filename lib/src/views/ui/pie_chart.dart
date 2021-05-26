@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:cm_pratical_assignment_2/src/model/Currency.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -10,6 +11,7 @@ import 'dart:developer';
 import 'dart:core';
 import 'dart:convert';
 import 'package:async/async.dart';
+import 'package:intl/intl.dart';
 import '../../model/Rates.dart';
 import '../../model/RatesDto.dart';
 import '../../services/SQLiteCurrencyStorage.dart';
@@ -23,16 +25,15 @@ import 'app_bar.dart';
 class PieChartWidget extends StatefulWidget {
 
   final String base;
-  final List<String> symbols;
-  final Map<String, double> money;
+  final List<Currency> myCurrencies;
   //final AsyncMemoizer _memoizer= AsyncMemoizer();
   final currencySymbol;
 
-  PieChartWidget(this.base, this.symbols, this.money, this.currencySymbol);
+  PieChartWidget(this.base, this.currencySymbol, this.myCurrencies);
 
   @override
   _PieChartState createState() =>
-    _PieChartState(base, symbols, money, currencySymbol);
+    _PieChartState(base, currencySymbol, myCurrencies);
 }
 
 
@@ -44,33 +45,38 @@ class _PieChartState extends State<PieChartWidget> {
   Future<String> message = Future<String>.value('');
 
   String base;
-  List<String> symbols;
-  Map<String, double> money;
+  String currencySymbol;
+  List<Currency> myCurrencies;
 
   double total=0;
   Map<String, double> moneyInBaseCurrency;
+  Map<String, double> money;
   bool isOriginal=true;
-  var currencySymbol;
   //AsyncMemoizer _memoizer;
 
   List<Color> colors;
   Map rates;
 
-  _PieChartState(String base,  List<String> symbols, Map<String, double> money, currencySymbol);
+  _PieChartState(String base, String currencySymbol, List<Currency> myCurrencies);
 
 
   @override
   void initState() {
     super.initState();
     //print(widget.base);
-    base=widget.base;
-    symbols=widget.symbols;
-    money=widget.money;
-    moneyInBaseCurrency = {...widget.money};
-    currencySymbol=widget.currencySymbol;
+    base = widget.base;
+    currencySymbol = widget.currencySymbol;
+    myCurrencies = widget.myCurrencies;
+
+    money = new HashMap();
+    moneyInBaseCurrency = new HashMap();
+    myCurrencies.forEach((element) {
+      moneyInBaseCurrency.putIfAbsent(element.currencyCode, () => element.amount);
+      money.putIfAbsent(element.currencyCode, () => element.amount);
+    });
     //_memoizer = AsyncMemoizer();
 
-    message = getResponse(base, symbols);
+    message = getResponse(base, myCurrencies.map((e) => e.currencyCode).toList());
 
     colors=createColors(money);
 
@@ -91,16 +97,23 @@ class _PieChartState extends State<PieChartWidget> {
       if(symbols[i]!=base){
         symbolsString ='$symbolsString'+','+symbols[i];}
     }
-    //print(symbolsString);
-    final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
-        { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
-          'base': base,
-          'symbols': symbolsString}
-    ));
-    if (response.statusCode == 200)
-      return getRates(response.body).toString();
-    else {
-      print('HTTP failed');
+
+    try {
+      final response = await http.get(Uri.http('data.fixer.io', '/api/latest',
+          { 'access_key': '278379fff23019b5e4ceb3d7c73ca717',
+            'base': base,
+            'symbols': symbolsString}
+      ));
+      if (response.statusCode == 200) {
+        return getRates(response.body).toString();
+      }
+      else {
+        print('HTTP failed');
+        return (await getRatesFromSQLite(base)).toString();
+      }
+    }
+    catch (err) {
+      print(err);
       return (await getRatesFromSQLite(base)).toString();
     }
   }
@@ -218,7 +231,9 @@ class _PieChartState extends State<PieChartWidget> {
         return PieChartSectionData(
             color: colors[i],
             value: valuesInBase[i],
-            title: isOriginal ? values[i].toStringAsFixed(2) +" " +name[i] : valuesInBase[i].toStringAsFixed(2) +" " +base,
+            title: isOriginal ?
+                  values[i].toStringAsFixed(2) + " " + currencySymbolOf(name[i]) :
+                  valuesInBase[i].toStringAsFixed(2) +" " + currencySymbolOf(base),
             radius: radius,
             titleStyle: TextStyle(
                 fontSize: fontSize,
@@ -229,6 +244,7 @@ class _PieChartState extends State<PieChartWidget> {
   }
 
   double getRates(String data) {
+    print("getRates");
     Map<String, dynamic> ratesMap = jsonDecode(data);
 
     var rat = Rate.fromJson(ratesMap);
@@ -312,5 +328,21 @@ class _PieChartState extends State<PieChartWidget> {
 
   List<Color> createColors(Map<String, double> money) {
     return List.generate(money.length, (i) => Color(Random().nextInt(0xffffffff))); //.withAlpha(0xff)
+  }
+
+  String currencySymbolOf(String currencyCode) {
+
+    Currency currency = myCurrencies
+        .firstWhere((element) => currencyCode == element.currencyCode);
+
+    if (currency == null) {
+      return currencyCode;
+    }
+
+    final Locale locale = new Locale(currency.languageCode, currency.countryCode);
+    final currencySymbol = NumberFormat
+        .simpleCurrency(locale: locale.toString())
+        .currencySymbol;
+    return currencySymbol;
   }
 }
