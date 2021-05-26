@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:cm_pratical_assignment_2/src/model/Currency.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +15,7 @@ import '../../services/SQLiteCurrencyStorage.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 
 import 'app_bar.dart';
 
@@ -45,7 +49,7 @@ class _PieChartState extends State<PieChartWidget> {
 
   double total=0;
   Map<String, double> moneyInBaseCurrency;
-  bool isEnabled=true;
+  bool isOriginal=true;
   var currencySymbol;
   //AsyncMemoizer _memoizer;
 
@@ -62,19 +66,21 @@ class _PieChartState extends State<PieChartWidget> {
     base=widget.base;
     symbols=widget.symbols;
     money=widget.money;
-    moneyInBaseCurrency=widget.money;
+    moneyInBaseCurrency = {...widget.money};
     currencySymbol=widget.currencySymbol;
-
     //_memoizer = AsyncMemoizer();
+
     message = getResponse(base, symbols);
 
     colors=createColors(money);
+
   }
 
 
   Future<String> getResponse(base, symbols) async {
     //await Future.delayed(Duration(seconds: 2));
     String symbolsString;
+
     //Because of the list space
     if(symbols[0]!=base)
       symbolsString=symbols[0];
@@ -108,23 +114,6 @@ class _PieChartState extends State<PieChartWidget> {
         child: Column(
           children: [
             new GradientAppBar("wallet"),
-            /*TextButton(
-              onPressed: () {
-                *//*setState((){
-                  ();
-                });*//*
-                *//*getValuesInBaseCurrency();
-                disableButton();*//*
-                if(isEnabled)getValuesInBaseCurrency();
-              },
-              child: Text('Calculate Total!')),
-            new Text("$total in Total",//"Total: $total",
-                    style: const TextStyle(
-                        color: Colors.black,
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 17.0),
-            ),*/
 
             Padding(
               padding: EdgeInsets.only(top: 20.0)
@@ -158,6 +147,26 @@ class _PieChartState extends State<PieChartWidget> {
                   }
                   return CircularProgressIndicator();
                 }),
+            Padding(
+                padding: EdgeInsets.only(top: 15.0)
+            ),
+            new Text("Show in Original Currency",
+              style: const TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
+                  fontSize: 13.0),
+            ),
+            Switch(
+                value: isOriginal,
+                onChanged: (value) {
+                  setState(() {
+                    isOriginal = value;
+                  });
+                },
+                activeTrackColor: Colors.yellow,
+                activeColor: Colors.orangeAccent,
+              ),
             Expanded(
               child: PieChart(
                 PieChartData(
@@ -197,25 +206,26 @@ class _PieChartState extends State<PieChartWidget> {
 
 
   List<PieChartSectionData> showingSections() {
-    List<double> values=money.values.toList();
-    List<double> valuesInBase=moneyInBaseCurrency.values.toList();
-    List<String> name=money.keys.toList();
-    return List.generate(moneyInBaseCurrency.length, (i) {
-      final isTouched = i == touchedIndex;
-      final fontSize = isTouched ? 25.0 : 14.0;
-      final radius = isTouched ? 60.0 : 50.0;
+      final List<double> values=money.values.toList();
+      List<double> valuesInBase=moneyInBaseCurrency.values.toList();
+      final List<String> name=money.keys.toList();
 
-      return PieChartSectionData(
-          color: colors[i],//Color(Random().nextInt(0xffffffff)).withAlpha(0xff),
-          value: valuesInBase[i],
-          title: values[i].toStringAsFixed(2) +" " +name[i],
-          radius: radius,
-          titleStyle: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.bold,
-          color: Colors.black)//const Color(0xffffffff))
-      );
-    });
+      return List.generate(money.length, (i) {
+        final isTouched = i == touchedIndex;
+        final fontSize = isTouched ? 25.0 : 14.0;
+        final radius = isTouched ? 60.0 : 50.0;
+
+        return PieChartSectionData(
+            color: colors[i],
+            value: valuesInBase[i],
+            title: isOriginal ? values[i].toStringAsFixed(2) +" " +name[i] : valuesInBase[i].toStringAsFixed(2) +" " +base,
+            radius: radius,
+            titleStyle: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.black)//const Color(0xffffffff))
+        );
+      });
   }
 
   double getRates(String data) {
@@ -238,7 +248,7 @@ class _PieChartState extends State<PieChartWidget> {
 
   Future<double> getRatesFromSQLite(String base) async {
 
-    // try to get from  sqlite
+    // try to get from sqlite
     RatesDto ratesDto = await DBProvider.db.getRates(base);
 
     if (ratesDto == null) {
@@ -256,10 +266,8 @@ class _PieChartState extends State<PieChartWidget> {
   }
 
   double getValuesInBaseCurrency() {
-    print("Rates");
-    print(rates);
-    print("Money ");
-    print(money);
+    /*print("Rates");
+    print(rates);*/
 
     money.entries.forEach((quantity) {
       rates.entries.forEach((rate) {
@@ -268,29 +276,19 @@ class _PieChartState extends State<PieChartWidget> {
         }
       });
     });
-    print(moneyInBaseCurrency);
     moneyInBaseCurrency.values.forEach((value) {
       total=total+value;
     });
     print("Total "+ total.toString());
 
-    //disableButton();
+    /*print("MoneyBaseCurrency ");
+    print(moneyInBaseCurrency);
+    print("Money ");
+    print(money);*/
 
     return total;
   }
 
-  enableButton(){
-    setState(() {
-      isEnabled = true;
-    });
-  }
-
-  disableButton(){
-
-    setState(() {
-      isEnabled = false;
-    });
-  }
 
   List<Color> createColors(Map<String, double> money) {
     return List.generate(money.length, (i) => Color(Random().nextInt(0xffffffff))); //.withAlpha(0xff)
