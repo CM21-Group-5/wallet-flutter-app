@@ -26,6 +26,7 @@ dependencies:
   intl: ^0.17.0
   currency_icons: ^0.2.0
   fl_chart: ^0.36.1
+  fluttertoast: ^8.0.7
   sqflite:
   path_provider:
 

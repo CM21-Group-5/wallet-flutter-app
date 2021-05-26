@@ -32,6 +32,7 @@ class DBProvider {
               "id INTEGER PRIMARY KEY AUTOINCREMENT,"
               "languageCode TEXT,"
               "countryCode TEXT,"
+              "currencySymbol TEXT,"
               "amount REAL"
               ")");
 
@@ -46,9 +47,9 @@ class DBProvider {
     final db = await database;
     //insert to the table using the new id
     var raw = await db.rawInsert(
-        "INSERT Into Currency (languageCode,countryCode,amount)"
+        "INSERT Into Currency (languageCode,countryCode,currencySymbol,amount)"
             " VALUES (?,?,?)",
-        [currency.languageCode, currency.countryCode, currency.amount]);
+        [currency.languageCode, currency.countryCode, currency.currencySymbol, currency.amount]);
     return raw;
   }
 

@@ -5,6 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:developer';
 import 'dart:core';
 import 'dart:convert';
@@ -19,7 +20,6 @@ import 'package:flutter/material.dart';
 
 import 'app_bar.dart';
 
-
 class PieChartWidget extends StatefulWidget {
 
   final String base;
@@ -32,7 +32,7 @@ class PieChartWidget extends StatefulWidget {
 
   @override
   _PieChartState createState() =>
-    _PieChartState(base,  symbols, money, currencySymbol);
+    _PieChartState(base, symbols, money, currencySymbol);
 }
 
 
@@ -268,6 +268,26 @@ class _PieChartState extends State<PieChartWidget> {
   double getValuesInBaseCurrency() {
     /*print("Rates");
     print(rates);*/
+
+    bool isThereOneCurrencyWithoutAConversionRate = money.keys
+        // exclude base
+        .where((element) => element != base)
+        .any((element) => !rates.containsKey(element));
+
+    if (isThereOneCurrencyWithoutAConversionRate) {
+
+      Fluttertoast.showToast(
+          msg: "Couldn't find Rate for all Currecies. Please, try again later",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0
+      );
+
+      throw new Exception("Couldn't find Rate for all Currecies. Please, try again later");
+    }
 
     money.entries.forEach((quantity) {
       rates.entries.forEach((rate) {

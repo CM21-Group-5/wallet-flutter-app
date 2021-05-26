@@ -119,11 +119,12 @@ class _HomeState extends State<Home> {
   }
 
   // add currency to wallet
-  void _add(context, locale, currencyCode) {
+  void _add(context, locale, currencyCode, currencySymbol) {
     setState(() {
       Currency currency = new Currency.alternative01(
           locale.languageCode,
           locale.countryCode,
+          currencySymbol,
           0);
       // add to wallet
       myCurrencies.add(currency);
@@ -249,7 +250,12 @@ class _HomeState extends State<Home> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => PieChartWidget(base, symbols, money, currencySymbol)),
+                            builder: (context) => PieChartWidget(base,
+                                symbols,
+                                money,
+                                currencySymbol)//,
+                                // myCurrencies.map((e) => e.currencySymbol).toList())
+                        ),
                       );
                     },
                   );
@@ -315,10 +321,13 @@ class _HomeState extends State<Home> {
                     // Provide a builder function. This is where the magic happens.
                     // Convert each item into a widget based on the type of item it is.
                     itemBuilder: (context, index) {
-                      final item = supportedLocales[index];
-                      final currencyCode = numberFormatSymbols[item.toString()]
+                      final locale = supportedLocales[index];
+                      final currencyCode = numberFormatSymbols[locale.toString()]
                           .DEF_CURRENCY_CODE;
                       final flagPath = currencyCode.toLowerCase();
+                      final currencySymbol =
+                          NumberFormat.simpleCurrency(locale: locale.toString())
+                              .currencySymbol;
                       return ListTile(
                         leading: Image.asset('icons/currency/$flagPath.png',
                             package: 'currency_icons'),
@@ -330,9 +339,7 @@ class _HomeState extends State<Home> {
                               fontWeight: FontWeight.w600,
                               fontSize: 18.0),
                         ),
-                        subtitle: Text(
-                          NumberFormat.simpleCurrency(locale: item.toString())
-                              .currencySymbol,
+                        subtitle: Text(currencySymbol,
                           style: const TextStyle(
                               color: Colors.white,
                               fontFamily: 'Poppins',
@@ -352,7 +359,7 @@ class _HomeState extends State<Home> {
                                     color: Colors.white,
                                   )),
                               onTap: () {
-                                _add(context, item, currencyCode);
+                                _add(context, locale, currencyCode, currencySymbol);
                               }
                             ),
                           ),
