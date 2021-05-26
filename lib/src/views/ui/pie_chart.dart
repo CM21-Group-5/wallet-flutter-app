@@ -7,8 +7,11 @@ import 'dart:core';
 import 'dart:convert';
 import 'package:async/async.dart';
 import '../../model/Rates.dart';
+import '../../model/RatesDto.dart';
+import '../../services/SQLiteCurrencyStorage.dart';
 import 'dart:math';
 import 'dart:ui';
+import 'dart:convert';
 
 import 'app_bar.dart';
 
@@ -90,8 +93,10 @@ class _PieChartState extends State<PieChartWidget> {
     ));
     if (response.statusCode == 200)
       return getRates(response.body).toString();
-    else
-      throw Exception('HTTP failed');
+    else {
+      print('HTTP failed');
+      return (await getRatesFromSQLite(base)).toString();
+    }
   }
 
 
@@ -218,9 +223,36 @@ class _PieChartState extends State<PieChartWidget> {
 
     var rat = Rate.fromJson(ratesMap);
     //print(' ${rat.rates}');
-    rates=rat.rates;
+    rates = rat.rates;
+
+    // insert into sqlite
+    //   1) convert maps to string
+    String ratesAsString = json.encode(rates);
+    //   2) create object
+    RatesDto ratesDto = new RatesDto(rat.base, ratesAsString);
+    //   3) add to sqlite
+    DBProvider.db.addRate(ratesDto);
 
     return getValuesInBaseCurrency();
+  }
+
+  Future<double> getRatesFromSQLite(String base) async {
+
+    // try to get from  sqlite
+    RatesDto ratesDto = await DBProvider.db.getRates(base);
+
+    if (ratesDto == null) {
+      throw Exception('HTTP failed and rates not in local DB');
+    }
+    else {
+
+      // convert string to maps
+      Map<String, dynamic> ratesMap = jsonDecode(ratesDto.rates);
+
+      rates = ratesMap;
+
+      return getValuesInBaseCurrency();
+    }
   }
 
   double getValuesInBaseCurrency() {
