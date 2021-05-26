@@ -26,39 +26,55 @@ class DBProvider {
   initDB() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, "WalletDB.db");
-    return await openDatabase(path, version: 2, onOpen: (db) {},
-        onCreate: (Database db, int version) async {
-          await db.execute("CREATE TABLE Currency ("
-              "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-              "languageCode TEXT,"
-              "countryCode TEXT,"
-              "amount REAL"
-              ")");
+    return await openDatabase(path, version: 3,
+        onUpgrade: (db, int oldVersion, int newVersion) {
+          db.execute("DROP TABLE Currency");
+          db.execute("DROP TABLE Rates");
 
-          await db.execute("CREATE TABLE Rates ("
-              "base TEXT PRIMARY KEY,"
-              "rates TEXT"
-              ")");
+          createTables(db);
+        },
+        onDowngrade: (db, int oldVersion, int newVersion) {
+          db.execute("DROP TABLE Currency");
+          db.execute("DROP TABLE Rates");
+
+          createTables(db);
+        },
+        onOpen: (db) {},
+        onCreate: (Database db, int version) {
+          createTables(db);
         });
+  }
+
+  void createTables(Database db) {
+
+    db.execute("CREATE TABLE Currency ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "languageCode TEXT,"
+        "countryCode TEXT,"
+        "currencySymbol TEXT,"
+        "currencyCode TEXT,"
+        "amount REAL"
+        ")");
+
+    db.execute("CREATE TABLE Rates ("
+        "base TEXT PRIMARY KEY,"
+        "rates TEXT"
+        ")");
   }
 
   add(Currency currency) async {
     final db = await database;
     //insert to the table using the new id
     var raw = await db.rawInsert(
-        "INSERT Into Currency (languageCode,countryCode,amount)"
-            " VALUES (?,?,?)",
-        [currency.languageCode, currency.countryCode, currency.amount]);
+        "INSERT Into Currency (languageCode,countryCode,currencySymbol,currencyCode,amount)"
+            " VALUES (?,?,?,?,?)",
+        [currency.languageCode,
+          currency.countryCode,
+          currency.currencySymbol,
+          currency.currencyCode,
+          currency.amount]);
+    currency.id = raw;
     return raw;
-  }
-
-  update(Currency currency) async {
-    final db = await database;
-    var res = await db.update("Currency", currency.toMap(),
-        where: "id = ?",
-        whereArgs: [currency.id],
-        conflictAlgorithm: ConflictAlgorithm.replace);
-    return res;
   }
 
   updateCurrency(Currency currency) async {
