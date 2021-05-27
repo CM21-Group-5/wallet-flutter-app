@@ -37,8 +37,6 @@ class PieChartWidget extends StatefulWidget {
 }
 
 
-
-
 class _PieChartState extends State<PieChartWidget> {
   int touchedIndex = -1;
 
@@ -117,7 +115,6 @@ class _PieChartState extends State<PieChartWidget> {
       return (await getRatesFromSQLite(base)).toString();
     }
   }
-
 
 
   @override
@@ -244,7 +241,7 @@ class _PieChartState extends State<PieChartWidget> {
   }
 
   double getRates(String data) {
-    print("getRates");
+    //print("getRates");
     Map<String, dynamic> ratesMap = jsonDecode(data);
 
     var rat = Rate.fromJson(ratesMap);
@@ -302,7 +299,7 @@ class _PieChartState extends State<PieChartWidget> {
           fontSize: 16.0
       );
 
-      throw new Exception("Couldn't find Rate for all Currecies. Please, try again later");
+      throw new Exception("Couldn't find Rate for all Currencies. Please, try again later");
     }
 
     money.entries.forEach((quantity) {

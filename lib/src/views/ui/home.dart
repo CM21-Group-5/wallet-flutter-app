@@ -20,11 +20,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  /*IR BUSCAR CURRENCIES DO USER A SQL Lite*/
-  List<Locale> supportedLocales; //moedas
-  List<Currency> myCurrencies; //minhas moedas
-  // List<int> _currencyAmounts; //valor de cada moeda
-  // List<Currency> currencies;
+
+  List<Locale> supportedLocales;
+  List<Currency> myCurrencies;
 
   // fields to neeeded when moving to next screen
   String base;
